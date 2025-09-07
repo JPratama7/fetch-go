@@ -62,7 +62,7 @@ checksum:
 snapshot:
   # The name of the snapshot.
   # Defaults to 'SNAPSHOT-{{.ShortCommit}}'.
-  name_template: "{{.ShortCommit}}"
+  name_template: "{{.Version}}-dev-{{.ShortCommit}}"
 
 # Changelog configuration
 changelog:
