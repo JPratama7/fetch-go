@@ -2,9 +2,7 @@
 name: GoReleaser Snapshot
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   goreleaser:
