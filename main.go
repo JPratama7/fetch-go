@@ -3,21 +3,23 @@ package main
 import (
 	"compress/gzip"
 	"context"
+	"fetch-go/robot"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	htmltomarkdown "github.com/JohannesKaufmann/html-to-markdown/v2"
-	"github.com/enetx/surf"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
+const DEFAULT_USER_AGENT = "ModelContextProtocol/1.0 (User-Specified; +https://github.com/JPratama7/fetch-go)"
+
 type FetchArgs struct {
-	Url        string            `json:"url"`
-	StartIndex int               `json:"startIndex"`
-	Range      int               `json:"range"`
-	UrlParam   map[string]string `json:"urlParam"`
+	Url        string `json:"url"`
+	StartIndex int    `json:"startIndex"`
+	Range      int    `json:"range"`
 }
 
 func decoder(src io.Reader, dest io.Writer, encoding string) error {
@@ -44,18 +46,17 @@ func fetchHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.CallTo
 	}
 
 	// Create a Surf client with advanced features
-	surfClient := surf.NewClient().
-		Builder().
-		Singleton().
-		AddHeaders("Content-Encoding", "gzip").
-		DNSOverTLS().Cloudflare().
-		Impersonate().
-		RandomOS().
-		Chrome().
-		Build().
-		Std()
+	surfClient := NewClient()
 
-	fmt.Printf("Payload is %+v\n", payload)
+	parsedUrl, err := url.Parse(payload.Url)
+	if err != nil {
+		return mcp.NewToolResultText("Invalid Url"), nil
+	}
+
+	robotRules, err := robot.FromURL(surfClient, parsedUrl)
+	if err == nil && !robotRules.IsAllowed(payload.Url) {
+		return mcp.NewToolResultText("Url is not allowed by robots.txt"), nil
+	}
 
 	resp, err := surfClient.Get(payload.Url)
 	if err != nil {
